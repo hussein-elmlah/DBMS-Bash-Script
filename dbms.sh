@@ -333,7 +333,59 @@ function selectFromTable() {
 # Function to delete from a table
 function deleteFromTable() {
     echo "deleteFromTable function is called."
-}
+
+    if [ -z "$currentDb" ]; then
+        echo "No database selected. Please connect to a database first."
+        return
+    fi
+
+    echo "Tables in the current database:"
+
+    # List only regular files (tables), not directories
+    for table in "$currentDb"/*; do
+        if [ -f "$table" ]; then
+            echo "- $(basename "$table")"
+        fi
+    done
+
+    echo -n "Enter the table name to delete from: "
+    read tableName
+
+    if [ -z "$tableName" ]; then
+        echo "Table name cannot be empty. Aborting delete operation."
+        return
+    fi
+
+    tablePath="$currentDb/$tableName"
+
+    if [ -e "$tablePath" ]; then
+        # Read column names from the table file
+        columns=$(head -n 1 "$tablePath")
+
+        # Display column names
+        echo "Columns in table '$tableName':"
+        IFS=',' read -ra columnArray <<< "$columns"
+        for ((i=0; i<${#columnArray[@]}; i++)); do
+            echo "$i - ${columnArray[$i]}"
+        done
+
+        # Prompt user for conditions
+        read -p "Enter conditions for deletion: " conditions
+
+        # Perform deletion based on conditions
+        if [ -z "$conditions" ]; then
+            echo "Deleting all rows from table '$tableName'."
+            > "$tablePath"  # Clear the table file
+        else
+            awk -F, -v conditions="$conditions" '$0 !~ conditions' "$tablePath" > "$tablePath.tmp"
+            mv "$tablePath.tmp" "$tablePath"
+            echo "Rows deleted from table '$tableName' based on the specified conditions."
+        fi
+    else
+        echo "Table '$tableName' not found in the current database."
+    fi
+} # End deleteFromTable function
+
 
 # Function to update a table
 function updateTable() {
