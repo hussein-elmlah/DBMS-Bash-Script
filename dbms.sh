@@ -1,4 +1,3 @@
-#!/bin/bash
 
 # ================================<< Start of (( Directory Variables )) >>================================
 
@@ -186,7 +185,55 @@ function dropTable() {
 # Function to insert into a table
 function insertIntoTable() {
     echo "insertIntoTable function is called."
-}
+
+    if [ -z "$currentDb" ]; then
+        echo "No database selected. Please connect to a database first."
+        return
+    fi
+
+    echo "Tables in the current database:"
+
+    # List only regular files (tables), not directories
+    for table in "$currentDb"/*; do
+        if [ -f "$table" ]; then
+            echo "- $(basename "$table")"
+        fi
+    done
+
+    echo -n "Enter the table name to insert into: "
+    read tableName
+
+    if [ -z "$tableName" ]; then
+        echo "Table name cannot be empty. Aborting insert operation."
+        return
+    fi
+
+    tablePath="$currentDb/$tableName"
+
+    if [ -e "$tablePath" ]; then
+        # Read column names from the table file
+        columns=$(head -n 1 "$tablePath")
+
+        # Prompt user for values for each column
+        declare -a values=()
+        for column in $(echo "$columns" | tr ',' ' '); do
+            echo -n "Enter value for $column: "
+            read value
+            values+=("$value")
+        done
+
+        # Combine values into a comma-separated string
+        valuesString=$(IFS=, ; echo "${values[*]}")
+
+        # Append values to the table file
+        echo "$valuesString" >> "$tablePath"
+
+        echo "Values inserted successfully into table '$tableName'."
+    else
+        echo "Table '$tableName' not found in the current database."
+    fi
+} # End insertIntoTable function
+
 
 # Function to select from a table
 function selectFromTable() {
@@ -289,3 +336,6 @@ while true; do
 done
 
 # ================================<< End of (( Main Menu )) >>================================
+
+                                                                                                                                                                                                                                                                                                                               340,0-1       Bot
+
