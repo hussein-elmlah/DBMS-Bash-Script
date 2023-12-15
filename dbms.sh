@@ -67,16 +67,78 @@ function dropDatabase() {
 }
 
 # ================================================================
-
 # Function to create a new table
 function createTable() {
     echo "createTable function is called."
-}
+    echo -n "Enter the table name: "
+    read tableName
+
+    if [ -z "$tableName" ]
+    then
+        echo "Table name cannot be empty. Aborting table creation."
+        return
+    fi
+    
+    if echo "$tableName" | grep -qE '^[a-zA-Z0-9_]+$'
+    then
+        echo "Valid table name."
+    else
+        echo "Invalid characters in the table name. Please use only alphanumeric characters and underscores."
+        return
+    fi
+
+    if [ -e "$DATABASE_DIR/$tableName" ]
+    then
+        echo "Table '$tableName' already exists. Do you want to overwrite it? (y/n): "
+        read -r overwrite
+        if [ "$overwrite" != "y" ]; then
+            echo "Table creation canceled."
+            return
+        fi
+    fi
+
+    echo -n "Enter column names (comma-separated): "
+    read columns
+    if [ -z "$columns" ]
+    then
+        echo "Column names cannot be empty. Aborting table creation."
+        return
+    fi
+    uniqueColumns=$(echo "$columns" | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//')
+
+    if [ "$columns" != "$uniqueColumns" ]
+    then
+        echo "Error: Duplicate column names found. Aborting table creation."
+        return
+    fi
+
+    touch "$DATABASE_DIR/$tableName"
+    echo "$columns" > "$DATABASE_DIR/$tableName"
+    echo "Table '$tableName' created successfully."
+}  # End createTable function.
+
+
+
+
 
 # Function to list all tables in the current database
 function listTable() {
     echo "listTable function is called."
-}
+    DATABASE_DIR="$SCRIPT_DIR/databases"
+    cd "$DATABASE_DIR" || { echo "Error: Could not change to the database directory."; return; }
+    echo "Tables in the current database:"
+    
+    if [ -z "$(sudo ls -A *)" ]
+    then
+        echo "No tables found in the current database."
+        return
+    fi
+    
+    for table in *
+    do
+        echo "- ${table}"
+    done
+} # End listTable function.
 
 # Function to drop a table
 function dropTable() {
