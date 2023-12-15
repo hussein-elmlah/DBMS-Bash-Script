@@ -124,6 +124,7 @@ function createTable() {
     echo "$columns" > "$tablePath"
     echo "Table '$tableName' created successfully in the current database."
 } # End createTable function.
+
 # Function to list all tables in the current database
 function listTable() {
     echo "listTable function is called."
@@ -143,10 +144,44 @@ function listTable() {
     done
 } # End listTable function.
 
-# Function to drop a table
+# Function to drop a table from the specified database
 function dropTable() {
     echo "dropTable function is called."
-}
+
+    if [ -z "$currentDb" ]; then
+        echo "No database selected. Please connect to a database first."
+        return
+    fi
+
+    echo "Tables in the current database:"
+
+    # List only regular files (tables), not directories
+    for table in "$currentDb"/*; do
+        if [ -f "$table" ]; then
+            echo "- $(basename "$table")"
+        fi
+    done
+
+    echo -n "Enter the table name to drop: "
+    read tableName
+
+    if [ -z "$tableName" ]; then
+        echo "Table name cannot be empty. Aborting table drop."
+        return
+    fi
+
+    tablePath="$currentDb/$tableName"
+
+    if [ -e "$tablePath" ]; then
+        rm "$tablePath"
+        echo "Table '$tableName' dropped successfully."
+    else
+        echo "Table '$tableName' not found in the current database."
+    fi
+} # End dropTable function
+
+
+
 
 # Function to insert into a table
 function insertIntoTable() {
