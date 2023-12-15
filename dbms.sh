@@ -259,7 +259,76 @@ function insertIntoTable() {
 # Function to select from a table
 function selectFromTable() {
     echo "selectFromTable function is called."
-}
+
+    if [ -z "$currentDb" ]; then
+        echo "No database selected. Please connect to a database first."
+        return
+    fi
+
+    echo "Tables in the current database:"
+
+    # List only regular files (tables), not directories
+    for table in "$currentDb"/*; do
+        if [ -f "$table" ]; then
+            echo "- $(basename "$table")"
+        fi
+    done
+
+    echo -n "Enter the table name to select from: "
+    read tableName
+
+    if [ -z "$tableName" ]; then
+        echo "Table name cannot be empty. Aborting select operation."
+        return
+    fi
+
+    tablePath="$currentDb/$tableName"
+
+    if [ -e "$tablePath" ]; then
+        # Read column names from the table file
+        columns=$(head -n 1 "$tablePath")
+
+        # Display column names
+        echo "Columns in table '$tableName':"
+        IFS=',' read -ra columnArray <<< "$columns"
+        for ((i=0; i<${#columnArray[@]}; i++)); do
+            echo "$i - ${columnArray[$i]}"
+        done
+
+        # Prompt user for column selection
+        read -p "Enter column numbers (comma-separated) or 'all' for all columns: " selectedColumns
+
+        # Parse selected columns
+        if [ "$selectedColumns" == "all" ]; then
+            selectedColumns="*"
+        else
+            IFS=',' read -ra selectedArray <<< "$selectedColumns"
+            selectedColumns=""
+            for index in "${selectedArray[@]}"; do
+                selectedColumns+="${columnArray[$index]},"
+            done
+            # Remove trailing comma
+            selectedColumns=${selectedColumns%,}
+        fi
+
+        # Prompt user for conditions
+        read -p "Enter conditions for selection (Press Enter if none): " conditions
+
+        # Perform selection based on conditions and selected columns
+        if [ -z "$conditions" ]; then
+            awk -F, -v cols="$selectedColumns" 'NR>1 {OFS=","} {print $cols}' "$tablePath"
+        else
+            awk -F, -v cols="$selectedColumns" -v conditions="$conditions" 'NR==1 || $0~conditions {OFS=","} {print $cols}' "$tablePath"
+        fi | tail -n +2  # Display values only, excluding the header
+
+        echo "Selection from table '$tableName' completed."
+    else
+        echo "Table '$tableName' not found in the current database."
+    fi
+} # End selectFromTable function
+
+
+
 
 # Function to delete from a table
 function deleteFromTable() {
