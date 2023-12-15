@@ -211,28 +211,49 @@ function insertIntoTable() {
     tablePath="$currentDb/$tableName"
 
     if [ -e "$tablePath" ]; then
-        # Read column names from the table file
-        columns=$(head -n 1 "$tablePath")
+        echo "Do you want to insert columns or data into columns?"
+        select option in "Insert Columns" "Insert Data"; do
+            case $option in
+                "Insert Columns")
+                    read -p "Enter column names separated by commas: " newColumns
+                    existingColumns=$(head -n 1 "$tablePath")
+                    allColumns="$existingColumns,$newColumns"
+                    echo "$allColumns" > "$tablePath"
+                    echo "Columns inserted successfully into table '$tableName'."
+                    break
+                    ;;
+                "Insert Data")
+                    # Read column names from the table file
+                    columns=$(head -n 1 "$tablePath")
 
-        # Prompt user for values for each column
-        declare -a values=()
-        for column in $(echo "$columns" | tr ',' ' '); do
-            echo -n "Enter value for $column: "
-            read value
-            values+=("$value")
+                    # Prompt user for values for each column
+                    declare -a values=()
+                    for column in $(echo "$columns" | tr ',' ' '); do
+                        echo -n "Enter value for $column: "
+                        read value
+                        values+=("$value")
+                    done
+
+                    # Combine values into a comma-separated string
+                    valuesString=$(IFS=, ; echo "${values[*]}")
+
+                    # Append values to the table file
+                    echo "$valuesString" >> "$tablePath"
+
+                    echo "Values inserted successfully into table '$tableName'."
+                    break
+                    ;;
+                *)
+                    echo "Invalid option. Please select again."
+                    ;;
+            esac
         done
-
-        # Combine values into a comma-separated string
-        valuesString=$(IFS=, ; echo "${values[*]}")
-
-        # Append values to the table file
-        echo "$valuesString" >> "$tablePath"
-
-        echo "Values inserted successfully into table '$tableName'."
     else
         echo "Table '$tableName' not found in the current database."
     fi
 } # End insertIntoTable function
+
+
 
 
 # Function to select from a table
