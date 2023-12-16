@@ -1,5 +1,6 @@
 
 
+
 # ================================<< Start of (( Directory Variables )) >>================================
 
 # Directory to store databases (same as the script file directory)
@@ -162,9 +163,9 @@ function dropTable() {
 
     echo "Tables in the current database:"
 
-    # List only regular files (tables), not directories
+    # List only directories (tables), not regular files
     for table in "$currentDb"/*; do
-        if [ -f "$table" ]; then
+        if [ -d "$table" ]; then
             echo "- $(basename "$table")"
         fi
     done
@@ -179,8 +180,8 @@ function dropTable() {
 
     tablePath="$currentDb/$tableName"
 
-    if [ -e "$tablePath" ]; then
-        rm "$tablePath"
+    if [ -d "$tablePath" ]; then
+        rm -r "$tablePath"
         echo "Table '$tableName' dropped successfully."
     else
         echo "Table '$tableName' not found in the current database."
