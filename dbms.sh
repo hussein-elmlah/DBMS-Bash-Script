@@ -1,6 +1,7 @@
 
 
 
+
 # ================================<< Start of (( Directory Variables )) >>================================
 
 # Directory to store databases (same as the script file directory)
@@ -190,7 +191,6 @@ function dropTable() {
 
 
 
-
 # Function to insert into a table
 function insertIntoTable() {
     echo "insertIntoTable function is called."
@@ -225,9 +225,46 @@ function insertIntoTable() {
             case $option in
                 "Insert Columns")
                     read -p "Enter column names separated by commas: " newColumns
-                    existingColumns=$(head -n 1 "$tablePath/metadata")
-                    allColumns="$existingColumns,$newColumns"
-                    echo "$allColumns" > "$tablePath/metadata"
+
+                    # Prompt for metadata for each column
+                    declare -a metadata=()
+                    for column in $(echo "$newColumns" | tr ',' ' '); do
+                        while true; do
+                            read -p "Enter metadata for $column (int/str/bool): " columnType
+                            case $columnType in
+                                "int"|"str"|"bool")
+                                    break
+                                    ;;
+                                *)
+                                    echo "Invalid column type. Please enter 'int', 'str', or 'bool'."
+                                    ;;
+                            esac
+                        done
+
+                        while true; do
+                            read -p "Is $column a primary key? (y/n): " isPrimaryKey
+                            case $isPrimaryKey in
+                                "y"|"n")
+                                    break
+                                    ;;
+                                *)
+                                    echo "Invalid input. Please enter 'y' or 'n'."
+                                    ;;
+                            esac
+                        done
+
+                        metadata+=("$column|$columnType|$isPrimaryKey")
+                    done
+
+
+
+			# Append column names to the first row of the data file
+			existingColumns=$(head -n 1 "$tablePath/data")
+			allColumns="$existingColumns|$newColumns"
+			echo "$allColumns" > "$tablePath/data"
+
+ 		# Append metadata to the metadata file
+                    printf "%s\n" "${metadata[@]}" >> "$tablePath/metadata"
                     echo "Columns inserted successfully into table '$tableName'."
                     break
                     ;;
@@ -261,6 +298,9 @@ function insertIntoTable() {
         echo "Table '$tableName' not found in the current database."
     fi
 } # End insertIntoTable function
+
+
+
 
 
 
