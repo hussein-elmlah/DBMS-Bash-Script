@@ -69,59 +69,44 @@ function dropDatabase() {
 function createTable() {
     echo "createTable function is called."
 
-    if [ -z "$currentDb" ]
-    then
-        echo "No database selected. Please connect to a database first."
-        return
-    fi
+  # Input table name
+read -p "Enter table name: " tableName
 
-    echo -n "Enter the table name: "
-    read tableName
+# Validate table name
+if [[ $tableName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
+  # Input database name
+  read -p "Enter database name: " dbName
 
-    if [ -z "$tableName" ]
-    then
-        echo "Table name cannot be empty. Aborting table creation."
-        return
-    fi
+  # Check if table already exists
+  if [[ -f "./databases/$dbName/$tableName" ]]; then
+    echo "Table $tableName already exists."
+  else
+    # Input number of columns
+    read -p "Enter number of columns: " columns
 
-    if echo "$tableName" | grep -qE '^[a-zA-Z0-9_]+$'
-    then
-        echo "Valid table name."
-    else
-        echo "Invalid characters in the table name. Please use only alphanumeric characters and underscores."
-        return
-    fi
+    # Create table file
+    touch "./databases/$dbName/$tableName"
 
-    tablePath="$currentDb/$tableName"
+    # Loop through columns
+    for ((i = 1; i <= columns; i++)); do
+      # Input column name
+      read -p "Enter Column $i Name: " colName
 
-    if [ -e "$tablePath" ]
-    then
-        echo "Table '$tableName' already exists in the current database. Do you want to overwrite it? (y/n): "
-        read -r overwrite
-        if [ "$overwrite" != "y" ]; then
-            echo "Table creation canceled."
-            return
-        fi
-    fi
+      # Input data type
+      read -p "Select Data Type for $colName (int/str/boolean): " datatype
 
-    echo -n "Enter column names (comma-separated): "
-    read columns
-    if [ -z "$columns" ]
-    then
-        echo "Column names cannot be empty. Aborting table creation."
-        return
-    fi
-    uniqueColumns=$(echo "$columns" | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//')
+      # Input if column is primary key
+      read -p "Is $colName a primary key? (yes/no): " isPrimary
 
-    if [ "$columns" != "$uniqueColumns" ]
-    then
-        echo "Error: Duplicate column names found. Aborting table creation."
-        return
-    fi
+      # Append column info to table file
+      echo "$colName|$datatype|$isPrimary" >> "./databases/$dbName/$tableName"
+    done
 
-    touch "$tablePath"
-    echo "$columns" > "$tablePath"
-    echo "Table '$tableName' created successfully in the current database."
+    echo "Table $tableName created successfully."
+  fi
+else
+  echo "Name validation error."
+fi
 } # End createTable function.
 
 # Function to list all tables in the current database
