@@ -331,7 +331,7 @@ function selectFromTable() {
         return
     fi
 
-    tablePath="$currentDb/$tableName"
+    tablePath="$currentDb/$tableName/data"
 
     if [ -e "$tablePath" ]; then
         # Read column names from the table file
@@ -405,7 +405,7 @@ function deleteFromTable() {
         return
     fi
 
-    tablePath="$currentDb/$tableName"
+    tablePath="$currentDb/$tableName/data"
 
     if [ -e "$tablePath" ]; then
         # Read column names from the table file
