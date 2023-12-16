@@ -202,9 +202,9 @@ function insertIntoTable() {
 
     echo "Tables in the current database:"
 
-    # List only regular files (tables), not directories
+    # List only directories (tables), not regular files
     for table in "$currentDb"/*; do
-        if [ -f "$table" ]; then
+        if [ -d "$table" ]; then
             echo "- $(basename "$table")"
         fi
     done
@@ -219,21 +219,21 @@ function insertIntoTable() {
 
     tablePath="$currentDb/$tableName"
 
-    if [ -e "$tablePath" ]; then
+    if [ -d "$tablePath" ]; then
         echo "Do you want to insert columns or data into columns?"
         select option in "Insert Columns" "Insert Data"; do
             case $option in
                 "Insert Columns")
                     read -p "Enter column names separated by commas: " newColumns
-                    existingColumns=$(head -n 1 "$tablePath")
+                    existingColumns=$(head -n 1 "$tablePath/metadata")
                     allColumns="$existingColumns,$newColumns"
-                    echo "$allColumns" > "$tablePath"
+                    echo "$allColumns" > "$tablePath/metadata"
                     echo "Columns inserted successfully into table '$tableName'."
                     break
                     ;;
                 "Insert Data")
-                    # Read column names from the table file
-                    columns=$(head -n 1 "$tablePath")
+                    # Read column names from the metadata file
+                    columns=$(head -n 1 "$tablePath/metadata")
 
                     # Prompt user for values for each column
                     declare -a values=()
@@ -246,8 +246,8 @@ function insertIntoTable() {
                     # Combine values into a comma-separated string
                     valuesString=$(IFS=, ; echo "${values[*]}")
 
-                    # Append values to the table file
-                    echo "$valuesString" >> "$tablePath"
+                    # Append values to the data file
+                    echo "$valuesString" >> "$tablePath/data"
 
                     echo "Values inserted successfully into table '$tableName'."
                     break
