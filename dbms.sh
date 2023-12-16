@@ -126,21 +126,30 @@ function createTable() {
 # Function to list all tables in the current database
 function listTable() {
     echo "listTable function is called."
-    DATABASE_DIR="$SCRIPT_DIR/databases"
-    cd "$DATABASE_DIR" || { echo "Error: Could not change to the database directory."; return; }
-    echo "Tables in the current database:"
 
-    if [ -z "$(sudo ls -A *)" ]
-    then
+    # Input database name
+    read -p "Enter database name: " dbName
+
+    DATABASE_DIR="$SCRIPT_DIR/databases/$dbName"
+    cd "$DATABASE_DIR" || { echo "Error: Could not change to the database directory."; return; }
+
+    # Check if the database is empty
+    if [ -z "$(ls -A)" ]; then
         echo "No tables found in the current database."
         return
     fi
 
+    echo "Tables in the current database:"
+
     for table in *
     do
-        echo "- ${table}"
+        if [ -d "${table}" ]; then
+            echo "- ${table}"
+        fi
     done
 } # End listTable function.
+
+
 
 # Function to drop a table from the specified database
 function dropTable() {
