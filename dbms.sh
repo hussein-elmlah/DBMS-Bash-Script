@@ -1,4 +1,5 @@
 
+
 # ================================<< Start of (( Directory Variables )) >>================================
 
 # Directory to store databases (same as the script file directory)
@@ -67,47 +68,60 @@ function dropDatabase() {
 
 # Function to create a new table
 function createTable() {
-    echo "createTable function is called."
+  echo "createTable function is called."
 
   # Input table name
-read -p "Enter table name: " tableName
+  read -p "Enter table name: " tableName
 
-# Validate table name
-if [[ $tableName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
-  # Input database name
-  read -p "Enter database name: " dbName
+  # Validate table name
+  if [[ $tableName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
+    # Input database name
+    read -p "Enter database name: " dbName
 
-  # Check if table already exists
-  if [[ -f "./databases/$dbName/$tableName" ]]; then
-    echo "Table $tableName already exists."
+    # Check if table already exists
+    if [[ -f "./databases/$dbName/$tableName" ]]; then
+      echo "Table $tableName already exists."
+    else
+      # Input number of columns
+      read -p "Enter number of columns: " columns
+
+      # Create table directory
+      mkdir -p "./databases/$dbName/$tableName"
+
+      # Create metadata file for table
+      touch "./databases/$dbName/$tableName/metadata"
+
+      # Create data file for table
+      touch "./databases/$dbName/$tableName/data"
+
+      # Loop through columns
+      columnNames=()
+      for ((i = 1; i <= columns; i++)); do
+        # Input column name
+        read -p "Enter Column $i Name: " colName
+        columnNames+=("$colName")
+
+        # Input data type
+        read -p "Select Data Type for $colName (int/str/boolean): " datatype
+
+        # Input if column is primary key
+        read -p "Is $colName a primary key? (yes/no): " isPrimary
+
+        # Append column info to metadata file
+        echo "$colName|$datatype|$isPrimary" >> "./databases/$dbName/$tableName/metadata"
+      done
+
+      # Store column names in the first row of the data file with "|"
+      echo "${columnNames[*]}" | tr ' ' '|' >> "./databases/$dbName/$tableName/data"
+
+
+      echo "Table $tableName created successfully."
+    fi
   else
-    # Input number of columns
-    read -p "Enter number of columns: " columns
-
-    # Create table file
-    touch "./databases/$dbName/$tableName"
-
-    # Loop through columns
-    for ((i = 1; i <= columns; i++)); do
-      # Input column name
-      read -p "Enter Column $i Name: " colName
-
-      # Input data type
-      read -p "Select Data Type for $colName (int/str/boolean): " datatype
-
-      # Input if column is primary key
-      read -p "Is $colName a primary key? (yes/no): " isPrimary
-
-      # Append column info to table file
-      echo "$colName|$datatype|$isPrimary" >> "./databases/$dbName/$tableName"
-    done
-
-    echo "Table $tableName created successfully."
+    echo "Name validation error."
   fi
-else
-  echo "Name validation error."
-fi
 } # End createTable function.
+
 
 # Function to list all tables in the current database
 function listTable() {
