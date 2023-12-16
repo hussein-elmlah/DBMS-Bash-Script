@@ -1,6 +1,6 @@
-
-
-
+#! /usr/bin/bash
+shopt -s extglob
+export LC_COLLATE=C
 
 # ================================<< Start of (( Directory Variables )) >>================================
 
