@@ -47,7 +47,9 @@ function listDatabase() {
 function connectToDatabase() {
     read -p "Enter the database name: " dbName
     dbPath="$DATABASE_DIR/$dbName"
-    if [ -d "$dbPath" ]; then
+    if [ -z "$dbName" ]; then
+        echo "Database name cannot be empty. Aborting Database connect."
+    elif [ -d "$dbPath" ]; then
         currentDb="$dbPath"
         echo "Connected to database '$dbName'."
         runSubMenu
@@ -63,7 +65,6 @@ function dropDatabase() {
     if [ -d "$dbPath" ]; then
         rm -r "$dbPath"
         echo "Database '$dbName' dropped successfully."
-        currentDb=""
     else
         echo "Database '$dbName' not found."
     fi
@@ -92,7 +93,7 @@ function createTable() {
       # Create metadata file for table
       touch "$currentDb/$tableName/metadata"
 
-      # Create data file for table
+      # Create data file for table              
       touch "$currentDb/$tableName/data"
 
       # Loop through columns
@@ -464,7 +465,6 @@ function runMainMenu() {
                 break
                 ;;
             "Quit")
-                echo "Exiting..."
                 exit
                 ;;
             *)
@@ -516,11 +516,10 @@ function runSubMenu() {
                     break
                     ;;
                 "Back TO Main Menu")
-                    runMainMenu
-                    break
+                    currentDb=""
+                    return
                     ;;
                 "Quit")
-                    echo "Exiting..."
                     exit
                     ;;
                 *)
