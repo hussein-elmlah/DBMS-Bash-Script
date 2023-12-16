@@ -62,7 +62,9 @@ function connectToDatabase() {
 function dropDatabase() {
     read -p "Enter the database name to drop: " dbName
     dbPath="$DATABASE_DIR/$dbName"
-    if [ -d "$dbPath" ]; then
+    if [ -z "$dbName" ]; then
+        echo "Database name cannot be empty. Aborting Database drop."
+    elif [ -d "$dbPath" ]; then
         rm -r "$dbPath"
         echo "Database '$dbName' dropped successfully."
     else
