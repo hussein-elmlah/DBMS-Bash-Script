@@ -50,6 +50,7 @@ function connectToDatabase() {
     if [ -d "$dbPath" ]; then
         currentDb="$dbPath"
         echo "Connected to database '$dbName'."
+        runSubMenu
     else
         echo "Database '$dbName' not found."
     fi
@@ -77,24 +78,22 @@ function createTable() {
 
   # Validate table name
   if [[ $tableName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
-    # Input database name
-    read -p "Enter database name: " dbName
 
     # Check if table already exists
-    if [[ -f "./databases/$dbName/$tableName" ]]; then
+    if [[ -f "$currentDb/$tableName" ]]; then
       echo "Table $tableName already exists."
     else
       # Input number of columns
       read -p "Enter number of columns: " columns
 
       # Create table directory
-      mkdir -p "./databases/$dbName/$tableName"
+      mkdir -p "$currentDb/$tableName"
 
       # Create metadata file for table
-      touch "./databases/$dbName/$tableName/metadata"
+      touch "$currentDb/$tableName/metadata"
 
       # Create data file for table
-      touch "./databases/$dbName/$tableName/data"
+      touch "$currentDb/$tableName/data"
 
       # Loop through columns
       columnNames=()
@@ -110,11 +109,11 @@ function createTable() {
         read -p "Is $colName a primary key? (yes/no): " isPrimary
 
         # Append column info to metadata file
-        echo "$colName|$datatype|$isPrimary" >> "./databases/$dbName/$tableName/metadata"
+        echo "$colName|$datatype|$isPrimary" >> "$currentDb/$tableName/metadata"
       done
 
       # Store column names in the first row of the data file with "|"
-      echo "${columnNames[*]}" | tr ' ' '|' >> "./databases/$dbName/$tableName/data"
+      echo "${columnNames[*]}" | tr ' ' '|' >> "$currentDb/$tableName/data"
 
 
       echo "Table $tableName created successfully."
@@ -129,11 +128,7 @@ function createTable() {
 function listTable() {
     echo "listTable function is called."
 
-    # Input database name
-    read -p "Enter database name: " dbName
-
-    DATABASE_DIR="$SCRIPT_DIR/databases/$dbName"
-    cd "$DATABASE_DIR" || { echo "Error: Could not change to the database directory."; return; }
+    cd "$currentDb" || { echo "Error: Could not change to the database directory."; return; }
 
     # Check if the database is empty
     if [ -z "$(ls -A)" ]; then
@@ -445,7 +440,9 @@ function updateTable() {
 
 # ================================<< Start of (( Main Menu )) >>================================
 
-while true; do
+# Function to runMainMenu a table
+function runMainMenu() {
+    while true; do
     PS3="Choose an option: "
     options=("Create Database" "List Databases" "Connect To Database" "Drop Database" "Quit")
     select opt in "${options[@]}"; do
@@ -468,19 +465,26 @@ while true; do
                 ;;
             "Quit")
                 echo "Exiting..."
-                exit 0
+                exit
                 ;;
             *)
                 echo "Invalid option. Please try again."
                 ;;
         esac
     done
+    done
+}
+
+# ================================<< End of (( Main Menu )) >>================================
+
 
 # ================================<< Start of (( SubMenu )) >>================================
 
-    while [ -n "$currentDb" ]; do
+# Function to runSubMenu a table
+function runSubMenu() {
+        while [ -n "$currentDb" ]; do
         PS3="Choose an option: "
-        options=("Create Table" "List Tables" "Drop Table" "Insert Into Table" "Select From Table" "Delete From Table" "Update Table" "Quit")
+        options=("Create Table" "List Tables" "Drop Table" "Insert Into Table" "Select From Table" "Delete From Table" "Update Table" "Back TO Main Menu" "Quit")
         select opt in "${options[@]}"; do
             case $opt in
                 "Create Table")
@@ -511,9 +515,13 @@ while true; do
                     updateTable
                     break
                     ;;
+                "Back TO Main Menu")
+                    runMainMenu
+                    break
+                    ;;
                 "Quit")
                     echo "Exiting..."
-                    exit 0
+                    exit
                     ;;
                 *)
                     echo "Invalid option. Please try again."
@@ -521,9 +529,10 @@ while true; do
             esac
         done
     done
+}
 
 # ================================<< End of (( SubMenu )) >>================================
 
-done
+# ================================<< (( CALLING MAIN FUNCTION TO RUN THE PROGRAM )) >>================================
 
-# ================================<< End of (( Main Menu )) >>================================
+runMainMenu
