@@ -100,6 +100,7 @@ function createTable() {
       # Input number of columns
       read -p "Enter number of columns: " columns
 
+
       # Create table directory
       mkdir -p "$currentDb/$tableName"
 
@@ -114,8 +115,9 @@ function createTable() {
       for ((i = 1; i <= columns; i++)); do
         # Input column name
         read -p "Enter Column $i Name: " colName
+         if [[ $colName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
         columnNames+=("$colName")
-
+  
         # Input data type
         read -p "Select Data Type for $colName (int/str/boolean): " datatype
 
@@ -124,6 +126,9 @@ function createTable() {
 
         # Append column info to metadata file
         echo "$colName|$datatype|$isPrimary" >> "$currentDb/$tableName/metadata"
+          else
+    echo "Name validation error."
+  fi
       done
 
       # Store column names in the first row of the data file with "|"
