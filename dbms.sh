@@ -506,7 +506,128 @@ function deleteFromTable() {
 
 # Function to update a table
 function updateTable() {
-    echo "updateTable function is called."
+    if [ -z "$currentDb" ]; then
+        echo "No database selected. Please connect to a database first."
+        return
+    fi
+
+    echo "Tables in the current database:"
+    for table in "$currentDb"/*; do
+        if [ -d "$table" ]; then
+            echo "- $(basename "$table")"
+        fi
+    done
+
+    read -p "Enter the table name to update: " tableName
+
+    if [ -z "$tableName" ]; then
+        echo "Table name cannot be empty. Aborting update operation."
+        return
+    fi
+
+    tablePath="$currentDb/$tableName"
+
+    if [ ! -d "$tablePath" ]; then
+        echo "Table '$tableName' not found in the current database."
+        return
+    fi
+
+    metadataFilePath="$tablePath/metadata"
+    dataFile="$tablePath/data"
+
+    if [ ! -f "$metadataFilePath" ] || [ ! -f "$dataFile" ]; then
+        echo "Invalid table structure. Metadata or data files are missing."
+        return
+    fi
+
+    # Read column names from the first line of the data file
+    columns=$(head -n 1 "$dataFile")
+
+    # Display column names
+    echo "Columns in table '$tableName':"
+    IFS='|' read -ra columnArray <<<"$columns"
+    for ((i = 0; i < ${#columnArray[@]}; i++)); do
+        echo "$((i + 1)) - ${columnArray[$i]}"
+    done
+
+    # Prompt user for column name to update
+    read -p "Enter the column name to update: " columnName
+
+    # Check if the column name is valid
+    if [[ ! " ${columnArray[@]} " =~ " $columnName " ]]; then
+        echo "Invalid column name. Aborting update operation."
+        return
+    fi
+
+    # Prompt user for value to update
+    read -p "Enter the current value in the column '$columnName': " currentValue
+
+    # Prompt user for the new value
+    read -p "Enter the new value for the column '$columnName': " newValue
+
+    # Get the index of the specified column
+    colIndex=$(echo "${columnArray[@]}" | awk -v columnName="$columnName" '{for(i=1;i<=NF;i++) if($i==columnName) print i}')
+
+    # Read column names, datatypes, and primary key info from metadata file
+    IFS='|' read -ra metadataColumns <<< "$(awk -v colIndex="$colIndex" -F'|' -v columnName="$columnName" '$1 == columnName {print $2 "|" $3; exit}' "$metadataFilePath")"
+
+    # Get the datatype of the specified column
+    dataType=${metadataColumns[0]}
+	
+    # echo "==========="
+    # echo "col  number : $colIndex"
+    # echo "col datatype: $dataType"
+    # echo "==========="
+	
+    # Validate the new value based on the column's datatype
+    case $dataType in
+        "int")
+            # Validation for integer datatype
+            if ! [[ "$newValue" =~ ^[0-9]+$ ]]; then
+                echo "Invalid input. The new value must be an integer."
+                return
+            fi
+            ;;
+        "str")
+            # Validation for string datatype
+            if [[ "$newValue" =~ "|" ]]; then
+                echo "Invalid input. The new value for a string type cannot contain '|'."
+                return
+            fi
+            ;;
+        "boolean")
+            # Validation for boolean datatype
+            if [[ "$newValue" != "yes" && "$newValue" != "no" ]]; then
+                echo "Invalid input. The new value must be '0' or '1' for boolean type."
+                return
+            fi
+            ;;
+        *)
+            echo "Unknown datatype in metadata. Aborting update operation."
+            return
+            ;;
+    esac
+
+    # If the column is a primary key, check if the new value is unique
+    isPrimary=${metadataColumns[1]}
+    if [ "$isPrimary" == "yes" ]; then
+        uniqueCheck=$(awk -v colIndex="$colIndex" -v newValue="$newValue" -F'|' 'NR>1 {if ($colIndex == newValue) print "notUnique"}' "$dataFile")
+        if [ "$uniqueCheck" == "notUnique" ]; then
+            echo "Error: The new value must be unique for the primary key column '$columnName'."
+            return
+        fi
+    fi
+
+    # Perform the update using awk
+    awk -v colIndex="$colIndex" -v currentValue="$currentValue" -v newValue="$newValue" 'BEGIN {FS=OFS="|"} {if (NR == 1) {print; next} else if ($colIndex == currentValue) $colIndex = newValue; print}' "$dataFile" > "$dataFile.tmp"
+
+    # Safely move the temporary file to the original file's location
+    if mv "$dataFile.tmp" "$dataFile"; then
+        echo "Update in table '$tableName' completed successfully."
+    else
+        echo "Error during update. Rolling back changes."
+        rm "$dataFile.tmp"
+    fi
 }
 
 # ================================<< End of (( Functions of DBMS )) >>================================
