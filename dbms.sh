@@ -294,31 +294,57 @@ function insertIntoTable() {
                         metadata+=("$column|$columnType|$isPrimaryKey")
                     done
 
+                    # Append column names to the first row of the data file
+                    existingColumns=$(head -n 1 "$tablePath/data")
+                    allColumns="$existingColumns|$newColumns"
+                    echo "$allColumns" > "$tablePath/data"
 
-
-			# Append column names to the first row of the data file
-			existingColumns=$(head -n 1 "$tablePath/data")
-			allColumns="$existingColumns|$newColumns"
-			echo "$allColumns" > "$tablePath/data"
-
- 		# Append metadata to the metadata file
-                    printf "%s\n" "${metadata[@]}" >> "$tablePath/metadata"
+                    # Write metadata to the metadata file
+                    printf "%s\n" "${metadata[@]}" > "$tablePath/metadata"
                     echo "Columns inserted successfully into table '$tableName'."
                     break
                     ;;
                 "Insert Data")
-                    # Read column names from the metadata file
-                    columns=$(head -n 1 "$tablePath/data")
-
-                    # Split columns into an array
-                    IFS='|' read -ra columnArray <<< "$columns"
+                    # Read metadata from the metadata file
+                    metadata=$(<"$tablePath/metadata")
+                    IFS=$'\n' read -rd '' -a metadataArray <<< "$metadata"
 
                     # Ask user for the values for each column
                     declare -a values=()
-                    for column in "${columnArray[@]}"; do
-                        echo -n "Enter value for $column: "
-                        read value
-                        values+=("$value")
+                    for meta in "${metadataArray[@]}"; do
+                        IFS='|' read -ra metaArray <<< "$meta"
+                        column="${metaArray[0]}"
+                        columnType="${metaArray[1]}"
+
+                        while true; do
+                            echo -n "Enter value for $column: "
+                            read value
+
+                            case $columnType in
+                                "int")
+                                    if [[ ! $value =~ ^[0-9]+$ ]]; then
+                                        echo "Invalid input. Please enter an integer."
+                                        continue
+                                    fi
+                                    ;;
+"str")
+    if [[ ! "$value" =~ ^[a-zA-Z]+$ ]]; then
+        echo "Invalid input. Please enter letters only."
+        continue
+    fi
+    ;;
+
+                                "boolean")
+                                    if [[ $value != "0" && $value != "1" ]]; then
+                                        echo "Invalid input. Please enter 0 or 1."
+                                        continue
+                                    fi
+                                    ;;
+                            esac
+
+                            values+=("$value")
+                            break
+                        done
                     done
 
                     # Combine values into a '|' separated string
@@ -338,9 +364,8 @@ function insertIntoTable() {
     else
         echo "Table '$tableName' not found in the current database."
     fi
-
-
 } # End insertIntoTable function
+
 
 
 
