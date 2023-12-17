@@ -37,9 +37,20 @@ function createDatabase() {
 
 # Function to list all databases
 function listDatabase() {
+    if [ -z "$(ls $DATABASE_DIR)" ]; then
+    echo "No Databases found ."
+    return
+    fi
     echo "Available databases:"
-    for db in "$DATABASE_DIR"/*/; do
-        echo "- $(basename "${db%/}")"
+    
+    # for db in "$DATABASE_DIR"/*/; do
+    #     echo "- $(basename "${db%/}")"
+    # done
+
+    for db in "$DATABASE_DIR"/*; do
+    if [ -d "$db" ]; then
+        echo "- $(basename "$db")"
+    fi
     done
 }
 
