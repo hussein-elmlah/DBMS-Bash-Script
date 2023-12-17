@@ -279,18 +279,21 @@ function insertIntoTable() {
                     ;;
                 "Insert Data")
                     # Read column names from the metadata file
-                    columns=$(head -n 1 "$tablePath/metadata")
+                    columns=$(head -n 1 "$tablePath/data")
 
-                    # Prompt user for values for each column
+                    # Split columns into an array
+                    IFS='|' read -ra columnArray <<< "$columns"
+
+                    # Ask user for the values for each column
                     declare -a values=()
-                    for column in $(echo "$columns" | tr ',' ' '); do
+                    for column in "${columnArray[@]}"; do
                         echo -n "Enter value for $column: "
                         read value
                         values+=("$value")
                     done
 
-                    # Combine values into a comma-separated string
-                    valuesString=$(IFS=, ; echo "${values[*]}")
+                    # Combine values into a '|' separated string
+                    valuesString=$(IFS='|' ; echo "${values[*]}")
 
                     # Append values to the data file
                     echo "$valuesString" >> "$tablePath/data"
@@ -306,6 +309,8 @@ function insertIntoTable() {
     else
         echo "Table '$tableName' not found in the current database."
     fi
+
+
 } # End insertIntoTable function
 
 
