@@ -118,31 +118,35 @@ function createTable() {
          if [[ $colName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
         columnNames+=("$colName")
   
-       # Input data type
-read -p "Select Data Type for $colName (int/str/boolean): " datatype
+# Input data type
+while true; do
+    read -p "Select Data Type for $colName (int/str/boolean): " datatype
 
-# Check if the entered data type is valid
-case $datatype in
-    "int"|"str"|"boolean")
-        # Input if column is primary key
-        read -p "Is $colName a primary key? (yes/no): " isPrimary
+    # Check if the entered data type is valid
+    case $datatype in
+        "int"|"str"|"boolean")
+            break  # Break out of the loop if the input is valid
+            ;;
+        *)
+            echo "Invalid data type. Please enter 'int', 'str', or 'boolean'."
+            ;;
+    esac
+done
 
-        # Check if the entered answer for primary key is valid
-        case $isPrimary in
-            "yes"|"no")
-                # Append column info to metadata file
-                echo "$colName|$datatype|$isPrimary" >> "$currentDb/$tableName/metadata"
-                ;;
-            *)
-                echo "Invalid input for primary key. Please enter 'yes' or 'no'."
-                ;;
-        esac
-        ;;
-    *)
-        echo "Invalid data type. Please enter 'int', 'str', or 'boolean'."
-        ;;
-esac
+# Input if column is primary key
+while true; do
+    read -p "Is $colName a primary key? (yes/no): " isPrimary
 
+    # Check if the entered answer for primary key is valid
+    case $isPrimary in
+        "yes"|"no")
+            break  # Break out of the loop if the input is valid
+            ;;
+        *)
+            echo "Invalid input for primary key. Please enter 'yes' or 'no'."
+            ;;
+    esac
+done
 
         # Append column info to metadata file
         echo "$colName|$datatype|$isPrimary" >> "$currentDb/$tableName/metadata"
