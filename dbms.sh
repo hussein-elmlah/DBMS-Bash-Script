@@ -624,16 +624,16 @@ function updateTable() {
    	    # Get the index of the specified column
     	    colWhereIndex=$(echo "${columnArray[@]}" | awk -v columnWhere="$columnWhere" '{for(i=1;i<=NF;i++) if($i==columnWhere) print i}')
 	        # Perform the update using awk
-   		awk -v colWhereIndex="$colWhereIndex" -v valueWhere="$valueWhere" -v newValue="$newValue" 'BEGIN {FS=OFS="|"} {if (NR == 1) {print; next} else if ($colWhereIndex == valueWhere) $colIndex = newValue; print}' "$dataFile" > "$dataFile.tmp"
+		awk -v colWhereIndex="$colWhereIndex" -v valueWhere="$valueWhere" -v colIndex="$colIndex" -v newValue="$newValue" 'BEGIN {FS=OFS="|"; print colWhereIndex, valueWhere, colIndex, newValue} {if (NR == 1) {print; next} else if ($colWhereIndex == valueWhere) $colIndex = newValue; print}' "$dataFile" > "$dataFile.tmp"
+
    		
+
+   		return
 	elif [ "$whereCondition" == "no" ]; then
         	# placeholder
 		echo "other conditions implementation still under-work..."
 	fi
 	
-	# Perform the update using awk with no condition
-       	awk -v colIndex="$colIndex" -v newValue="$newValue" -v condition="$condition" 'BEGIN {FS=OFS="|"} {if (NR == 1) {print; next} else $colIndex = newValue; print}' "$dataFile" >"$dataFile.tmp"
-
     elif [ "$updateCondition" == "no" ]; then
         # Update all rows
 	echo "Updating all rows"
