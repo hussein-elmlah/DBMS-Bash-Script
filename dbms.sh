@@ -549,54 +549,47 @@ function updateTable() {
     # Prompt user for value to update
     read -p "Enter the new value for the column '$columnName': " newValue
 
-
-
-
-
-
-
-
     # Get the index of the specified column
     colIndex=$(echo "${columnArray[@]}" | awk -v columnName="$columnName" '{for(i=1;i<=NF;i++) if($i==columnName) print i}')
 
     # Read column names, datatypes, and primary key info from metadata file
-    IFS='|' read -ra metadataColumns <<< "$(awk -v colIndex="$colIndex" -F'|' -v columnName="$columnName" '$1 == columnName {print $2 "|" $3; exit}' "$metadataFilePath")"
+    IFS='|' read -ra metadataColumns <<<"$(awk -v colIndex="$colIndex" -F'|' -v columnName="$columnName" '$1 == columnName {print $2 "|" $3; exit}' "$metadataFilePath")"
 
     # Get the datatype of the specified column
     dataType=${metadataColumns[0]}
-	
+
     # echo "==========="
     # echo "col  number : $colIndex"
     # echo "col datatype: $dataType"
     # echo "==========="
-	
+
     # Validate the new value based on the column's datatype
     case $dataType in
-        "int")
-            # Validation for integer datatype
-            if ! [[ "$newValue" =~ ^[0-9]+$ ]]; then
-                echo "Invalid input. The new value must be an integer."
-                return
-            fi
-            ;;
-        "str")
-            # Validation for string datatype
-            if [[ "$newValue" =~ "|" ]]; then
-                echo "Invalid input. The new value for a string type cannot contain '|'."
-                return
-            fi
-            ;;
-        "boolean")
-            # Validation for boolean datatype
-            if [[ "$newValue" != "yes" && "$newValue" != "no" ]]; then
-                echo "Invalid input. The new value must be '0' or '1' for boolean type."
-                return
-            fi
-            ;;
-        *)
-            echo "Unknown datatype in metadata. Aborting update operation."
+    "int")
+        # Validation for integer datatype
+        if ! [[ "$newValue" =~ ^[0-9]+$ ]]; then
+            echo "Invalid input. The new value must be an integer."
             return
-            ;;
+        fi
+        ;;
+    "str")
+        # Validation for string datatype
+        if [[ "$newValue" =~ "|" ]]; then
+            echo "Invalid input. The new value for a string type cannot contain '|'."
+            return
+        fi
+        ;;
+    "boolean")
+        # Validation for boolean datatype
+        if [[ "$newValue" != "yes" && "$newValue" != "no" ]]; then
+            echo "Invalid input. The new value must be '0' or '1' for boolean type."
+            return
+        fi
+        ;;
+    *)
+        echo "Unknown datatype in metadata. Aborting update operation."
+        return
+        ;;
     esac
 
     # If the column is a primary key, check if the new value is unique
@@ -608,38 +601,33 @@ function updateTable() {
             return
         fi
     fi
-    
-    
+
     # Prompt user for the condition
     read -p "Do you want to update a specific row based on a condition? (yes/no): " updateCondition
 
     if [ "$updateCondition" == "yes" ]; then
-	read -p "Do you want a 'WHERE' condition? (yes/no): " whereCondition
-	
-	if [ "$whereCondition" == "yes" ]; then
-	    # Prompt user for column of where condition
-    	    read -p "Enter the Column of where condition: " columnWhere
-	    # Prompt user for value of where condition
-    	    read -p "Enter the Value of where condition: " valueWhere
-   	    # Get the index of the specified column
-    	    colWhereIndex=$(echo "${columnArray[@]}" | awk -v columnWhere="$columnWhere" '{for(i=1;i<=NF;i++) if($i==columnWhere) print i}')
-	        # Perform the update using awk
-		awk -v colWhereIndex="$colWhereIndex" -v valueWhere="$valueWhere" -v colIndex="$colIndex" -v newValue="$newValue" 'BEGIN {FS=OFS="|"; print colWhereIndex, valueWhere, colIndex, newValue} {if (NR == 1) {print; next} else if ($colWhereIndex == valueWhere) $colIndex = newValue; print}' "$dataFile" > "$dataFile.tmp"
+        read -p "Do you want a 'WHERE' condition? (yes/no): " whereCondition
 
-   		
+        if [ "$whereCondition" == "yes" ]; then
+            # Prompt user for column of where condition
+            read -p "Enter the Column of where condition: " columnWhere
+            # Prompt user for value of where condition
+            read -p "Enter the Value of where condition: " valueWhere
+            # Get the index of the specified column
+            colWhereIndex=$(echo "${columnArray[@]}" | awk -v columnWhere="$columnWhere" '{for(i=1;i<=NF;i++) if($i==columnWhere) print i}')
+            # Perform the update using awk
+            awk -v colWhereIndex="$colWhereIndex" -v valueWhere="$valueWhere" -v colIndex="$colIndex" -v newValue="$newValue" 'BEGIN {FS=OFS="|"} {if (NR == 1) {print; next} else if ($colWhereIndex == valueWhere) $colIndex = newValue; print}' "$dataFile" >"$dataFile.tmp"
 
-   		return
-	elif [ "$whereCondition" == "no" ]; then
-        	# placeholder
-		echo "other conditions implementation still under-work..."
-	fi
-	
+        elif [ "$whereCondition" == "no" ]; then
+            # placeholder
+            echo "other conditions implementation still under-work..."
+        fi
+
     elif [ "$updateCondition" == "no" ]; then
         # Update all rows
-	echo "Updating all rows"
+        echo "Updating all rows"
         awk -v colIndex="$colIndex" -v newValue="$newValue" 'BEGIN {FS=OFS="|"} {if (NR == 1) {print; next} else $colIndex = newValue; print}' "$dataFile" >"$dataFile.tmp"
     fi
-
 
     # Safely move the temporary file to the original file's location
     if mv "$dataFile.tmp" "$dataFile"; then
