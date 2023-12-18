@@ -581,7 +581,7 @@ function updateTable() {
         ;;
     "boolean")
         # Validation for boolean datatype
-        if [[ "$newValue" != "yes" && "$newValue" != "no" ]]; then
+        if [[ "$newValue" != '1' && "$newValue" != '0' ]]; then
             echo "Invalid input. The new value must be '0' or '1' for boolean type."
             return
         fi
