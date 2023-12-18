@@ -38,19 +38,19 @@ function createDatabase() {
 # Function to list all databases
 function listDatabase() {
     if [ -z "$(ls $DATABASE_DIR)" ]; then
-    echo "No Databases found ."
-    return
+        echo "No Databases found ."
+        return
     fi
     echo "Available databases:"
-    
+
     # for db in "$DATABASE_DIR"/*/; do
     #     echo "- $(basename "${db%/}")"
     # done
 
     for db in "$DATABASE_DIR"/*; do
-    if [ -d "$db" ]; then
-        echo "- $(basename "$db")"
-    fi
+        if [ -d "$db" ]; then
+            echo "- $(basename "$db")"
+        fi
     done
 }
 
@@ -85,93 +85,93 @@ function dropDatabase() {
 
 # Function to create a new table
 function createTable() {
-  echo "createTable function is called."
+    echo "createTable function is called."
 
-  # Input table name
-  read -p "Enter table name: " tableName
+    # Input table name
+    read -p "Enter table name: " tableName
 
-  # Validate table name
-  if [[ $tableName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
+    # Validate table name
+    if [[ $tableName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
 
-    # Check if table already exists
-    if [[ -f "$currentDb/$tableName" ]]; then
-      echo "Table $tableName already exists."
+        # Check if table already exists
+        if [[ -f "$currentDb/$tableName" ]]; then
+            echo "Table $tableName already exists."
+        else
+            # Input number of columns
+            read -p "Enter number of columns: " columns
+
+            # Create table directory
+            mkdir -p "$currentDb/$tableName"
+
+            # Create metadata file for table
+            touch "$currentDb/$tableName/metadata"
+
+            # Create data file for table
+            touch "$currentDb/$tableName/data"
+
+            # Loop through columns
+            columnNames=()
+            for ((i = 1; i <= columns; i++)); do
+                # Input column name
+                read -p "Enter Column $i Name: " colName
+                if [[ $colName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
+                    columnNames+=("$colName")
+
+                    # Input data type
+                    while true; do
+                        read -p "Select Data Type for $colName (int/str/boolean): " datatype
+
+                        # Check if the entered data type is valid
+                        case $datatype in
+                        "int" | "str" | "boolean")
+                            break # Break out of the loop if the input is valid
+                            ;;
+                        *)
+                            echo "Invalid data type. Please enter 'int', 'str', or 'boolean'."
+                            ;;
+                        esac
+                    done
+
+                    # Input if column is primary key
+                    while true; do
+                        read -p "Is $colName a primary key? (yes/no): " isPrimary
+
+                        # Check if the entered answer for primary key is valid
+                        case $isPrimary in
+                        "yes" | "no")
+                            break # Break out of the loop if the input is valid
+                            ;;
+                        *)
+                            echo "Invalid input for primary key. Please enter 'yes' or 'no'."
+                            ;;
+                        esac
+                    done
+
+                    # Append column info to metadata file
+                    echo "$colName|$datatype|$isPrimary" >>"$currentDb/$tableName/metadata"
+                else
+                    echo "Name validation error."
+                fi
+            done
+
+            # Store column names in the first row of the data file with "|"
+            echo "${columnNames[*]}" | tr ' ' '|' >>"$currentDb/$tableName/data"
+
+            echo "Table $tableName created successfully."
+        fi
     else
-      # Input number of columns
-      read -p "Enter number of columns: " columns
-
-
-      # Create table directory
-      mkdir -p "$currentDb/$tableName"
-
-      # Create metadata file for table
-      touch "$currentDb/$tableName/metadata"
-
-      # Create data file for table              
-      touch "$currentDb/$tableName/data"
-
-      # Loop through columns
-      columnNames=()
-      for ((i = 1; i <= columns; i++)); do
-        # Input column name
-        read -p "Enter Column $i Name: " colName
-         if [[ $colName =~ ^[A-Za-z_]{1}[A-Za-z0-9]*$ ]]; then
-        columnNames+=("$colName")
-  
-# Input data type
-while true; do
-    read -p "Select Data Type for $colName (int/str/boolean): " datatype
-
-    # Check if the entered data type is valid
-    case $datatype in
-        "int"|"str"|"boolean")
-            break  # Break out of the loop if the input is valid
-            ;;
-        *)
-            echo "Invalid data type. Please enter 'int', 'str', or 'boolean'."
-            ;;
-    esac
-done
-
-# Input if column is primary key
-while true; do
-    read -p "Is $colName a primary key? (yes/no): " isPrimary
-
-    # Check if the entered answer for primary key is valid
-    case $isPrimary in
-        "yes"|"no")
-            break  # Break out of the loop if the input is valid
-            ;;
-        *)
-            echo "Invalid input for primary key. Please enter 'yes' or 'no'."
-            ;;
-    esac
-done
-
-        # Append column info to metadata file
-        echo "$colName|$datatype|$isPrimary" >> "$currentDb/$tableName/metadata"
-          else
-    echo "Name validation error."
-  fi
-      done
-
-      # Store column names in the first row of the data file with "|"
-      echo "${columnNames[*]}" | tr ' ' '|' >> "$currentDb/$tableName/data"
-
-
-      echo "Table $tableName created successfully."
+        echo "Name validation error."
     fi
-  else
-    echo "Name validation error."
-  fi
 } # End createTable function.
-
 
 # Function to list all tables in the current database
 function listTable() {
     echo "listTable function is called."
 
-    cd "$currentDb" || { echo "Error: Could not change to the database directory."; return; }
+    cd "$currentDb" || {
+        echo "Error: Could not change to the database directory."
+        return
+    }
 
     # Check if the database is empty
     if [ -z "$(ls -A)" ]; then
@@ -181,15 +181,12 @@ function listTable() {
 
     echo "Tables in the current database:"
 
-    for table in *
-    do
+    for table in *; do
         if [ -d "${table}" ]; then
             echo "- ${table}"
         fi
     done
 } # End listTable function.
-
-
 
 # Function to drop a table from the specified database
 function dropTable() {
@@ -227,8 +224,6 @@ function dropTable() {
     fi
 } # End dropTable function
 
-
-
 # Function to insert into a table
 function insertIntoTable() {
     echo "insertIntoTable function is called."
@@ -261,117 +256,113 @@ function insertIntoTable() {
         echo "Do you want to insert columns or data into columns?"
         select option in "Insert Columns" "Insert Data"; do
             case $option in
-                "Insert Columns")
-                    read -p "Enter column names separated by commas: " newColumns
+            "Insert Columns")
+                read -p "Enter column names separated by commas: " newColumns
 
-                    # Prompt for metadata for each column
-                    declare -a metadata=()
-                    for column in $(echo "$newColumns" | tr ',' ' '); do
-                        while true; do
-                            read -p "Enter metadata for $column (int/str/bool): " columnType
-                            case $columnType in
-                                "int"|"str"|"bool")
-                                    break
-                                    ;;
-                                *)
-                                    echo "Invalid column type. Please enter 'int', 'str', or 'bool'."
-                                    ;;
-                            esac
-                        done
-
-                        while true; do
-                            read -p "Is $column a primary key? (y/n): " isPrimaryKey
-                            case $isPrimaryKey in
-                                "y"|"n")
-                                    break
-                                    ;;
-                                *)
-                                    echo "Invalid input. Please enter 'y' or 'n'."
-                                    ;;
-                            esac
-                        done
-
-                        metadata+=("$column|$columnType|$isPrimaryKey")
-                    done
-
-                    # Append column names to the first row of the data file
-                    existingColumns=$(head -n 1 "$tablePath/data")
-                    allColumns="$existingColumns|$newColumns"
-                    echo "$allColumns" > "$tablePath/data"
-
-                    # Write metadata to the metadata file
-                    printf "%s\n" "${metadata[@]}" > "$tablePath/metadata"
-                    echo "Columns inserted successfully into table '$tableName'."
-                    break
-                    ;;
-                "Insert Data")
-                    # Read metadata from the metadata file
-                    metadata=$(<"$tablePath/metadata")
-                    IFS=$'\n' read -rd '' -a metadataArray <<< "$metadata"
-
-                    # Ask user for the values for each column
-                    declare -a values=()
-                    for meta in "${metadataArray[@]}"; do
-                        IFS='|' read -ra metaArray <<< "$meta"
-                        column="${metaArray[0]}"
-                        columnType="${metaArray[1]}"
-
-                        while true; do
-                            echo -n "Enter value for $column: "
-                            read value
-
-                            case $columnType in
-                                "int")
-                                    if [[ ! $value =~ ^[0-9]+$ ]]; then
-                                        echo "Invalid input. Please enter an integer."
-                                        continue
-                                    fi
-                                    ;;
-"str")
-    if [[ ! "$value" =~ ^[a-zA-Z]+$ ]]; then
-        echo "Invalid input. Please enter letters only."
-        continue
-    fi
-    ;;
-
-                                "boolean")
-                                    if [[ $value != "0" && $value != "1" ]]; then
-                                        echo "Invalid input. Please enter 0 or 1."
-                                        continue
-                                    fi
-                                    ;;
-                            esac
-
-                            values+=("$value")
+                # Prompt for metadata for each column
+                declare -a metadata=()
+                for column in $(echo "$newColumns" | tr ',' ' '); do
+                    while true; do
+                        read -p "Enter metadata for $column (int/str/bool): " columnType
+                        case $columnType in
+                        "int" | "str" | "bool")
                             break
-                        done
+                            ;;
+                        *)
+                            echo "Invalid column type. Please enter 'int', 'str', or 'bool'."
+                            ;;
+                        esac
                     done
 
-                    # Combine values into a '|' separated string
-                    valuesString=$(IFS='|' ; echo "${values[*]}")
+                    while true; do
+                        read -p "Is $column a primary key? (y/n): " isPrimaryKey
+                        case $isPrimaryKey in
+                        "y" | "n")
+                            break
+                            ;;
+                        *)
+                            echo "Invalid input. Please enter 'y' or 'n'."
+                            ;;
+                        esac
+                    done
 
-                    # Append values to the data file
-                    echo "$valuesString" >> "$tablePath/data"
+                    metadata+=("$column|$columnType|$isPrimaryKey")
+                done
 
-                    echo "Values inserted successfully into table '$tableName'."
-                    break
-                    ;;
-                *)
-                    echo "Invalid option. Please select again."
-                    ;;
+                # Append column names to the first row of the data file
+                existingColumns=$(head -n 1 "$tablePath/data")
+                allColumns="$existingColumns|$newColumns"
+                echo "$allColumns" >"$tablePath/data"
+
+                # Write metadata to the metadata file
+                printf "%s\n" "${metadata[@]}" >"$tablePath/metadata"
+                echo "Columns inserted successfully into table '$tableName'."
+                break
+                ;;
+            "Insert Data")
+                # Read metadata from the metadata file
+                metadata=$(<"$tablePath/metadata")
+                IFS=$'\n' read -rd '' -a metadataArray <<<"$metadata"
+
+                # Ask user for the values for each column
+                declare -a values=()
+                for meta in "${metadataArray[@]}"; do
+                    IFS='|' read -ra metaArray <<<"$meta"
+                    column="${metaArray[0]}"
+                    columnType="${metaArray[1]}"
+
+                    while true; do
+                        echo -n "Enter value for $column: "
+                        read value
+
+                        case $columnType in
+                        "int")
+                            if [[ ! $value =~ ^[0-9]+$ ]]; then
+                                echo "Invalid input. Please enter an integer."
+                                continue
+                            fi
+                            ;;
+                        "str")
+                            if [[ ! "$value" =~ ^[a-zA-Z]+$ ]]; then
+                                echo "Invalid input. Please enter letters only."
+                                continue
+                            fi
+                            ;;
+
+                        "boolean")
+                            if [[ $value != "0" && $value != "1" ]]; then
+                                echo "Invalid input. Please enter 0 or 1."
+                                continue
+                            fi
+                            ;;
+                        esac
+
+                        values+=("$value")
+                        break
+                    done
+                done
+
+                # Combine values into a '|' separated string
+                valuesString=$(
+                    IFS='|'
+                    echo "${values[*]}"
+                )
+
+                # Append values to the data file
+                echo "$valuesString" >>"$tablePath/data"
+
+                echo "Values inserted successfully into table '$tableName'."
+                break
+                ;;
+            *)
+                echo "Invalid option. Please select again."
+                ;;
             esac
         done
     else
         echo "Table '$tableName' not found in the current database."
     fi
 } # End insertIntoTable function
-
-
-
-
-
-
-
 
 # Function to select from a table
 function selectFromTable() {
@@ -407,8 +398,8 @@ function selectFromTable() {
 
         # Display column names
         echo "Columns in table '$tableName':"
-        IFS=',' read -ra columnArray <<< "$columns"
-        for ((i=0; i<${#columnArray[@]}; i++)); do
+        IFS=',' read -ra columnArray <<<"$columns"
+        for ((i = 0; i < ${#columnArray[@]}; i++)); do
             echo "$i - ${columnArray[$i]}"
         done
 
@@ -419,7 +410,7 @@ function selectFromTable() {
         if [ "$selectedColumns" == "all" ]; then
             selectedColumns="*"
         else
-            IFS=',' read -ra selectedArray <<< "$selectedColumns"
+            IFS=',' read -ra selectedArray <<<"$selectedColumns"
             selectedColumns=""
             for index in "${selectedArray[@]}"; do
                 selectedColumns+="${columnArray[$index]},"
@@ -436,16 +427,13 @@ function selectFromTable() {
             awk -F, -v cols="$selectedColumns" 'NR>1 {OFS=","} {print $cols}' "$tablePath"
         else
             awk -F, -v cols="$selectedColumns" -v conditions="$conditions" 'NR==1 || $0~conditions {OFS=","} {print $cols}' "$tablePath"
-        fi | tail -n +2  # Display values only, excluding the header
+        fi | tail -n +2 # Display values only, excluding the header
 
         echo "Selection from table '$tableName' completed."
     else
         echo "Table '$tableName' not found in the current database."
     fi
 } # End selectFromTable function
-
-
-
 
 # Function to delete from a table
 function deleteFromTable() {
@@ -481,8 +469,8 @@ function deleteFromTable() {
 
         # Display column names
         echo "Columns in table '$tableName':"
-        IFS=',' read -ra columnArray <<< "$columns"
-        for ((i=0; i<${#columnArray[@]}; i++)); do
+        IFS=',' read -ra columnArray <<<"$columns"
+        for ((i = 0; i < ${#columnArray[@]}; i++)); do
             echo "$i - ${columnArray[$i]}"
         done
 
@@ -492,9 +480,9 @@ function deleteFromTable() {
         # Perform deletion based on conditions
         if [ -z "$conditions" ]; then
             echo "Deleting all rows from table '$tableName'."
-            > "$tablePath"  # Clear the table file
+            >"$tablePath" # Clear the table file
         else
-            awk -F, -v conditions="$conditions" '$0 !~ conditions' "$tablePath" > "$tablePath.tmp"
+            awk -F, -v conditions="$conditions" '$0 !~ conditions' "$tablePath" >"$tablePath.tmp"
             mv "$tablePath.tmp" "$tablePath"
             echo "Rows deleted from table '$tableName' based on the specified conditions."
         fi
@@ -502,7 +490,6 @@ function deleteFromTable() {
         echo "Table '$tableName' not found in the current database."
     fi
 } # End deleteFromTable function
-
 
 # Function to update a table
 function updateTable() {
@@ -560,10 +547,14 @@ function updateTable() {
     fi
 
     # Prompt user for value to update
-    read -p "Enter the current value in the column '$columnName': " currentValue
-
-    # Prompt user for the new value
     read -p "Enter the new value for the column '$columnName': " newValue
+
+
+
+
+
+
+
 
     # Get the index of the specified column
     colIndex=$(echo "${columnArray[@]}" | awk -v columnName="$columnName" '{for(i=1;i<=NF;i++) if($i==columnName) print i}')
@@ -617,9 +608,38 @@ function updateTable() {
             return
         fi
     fi
+    
+    
+    # Prompt user for the condition
+    read -p "Do you want to update a specific row based on a condition? (yes/no): " updateCondition
 
-    # Perform the update using awk
-    awk -v colIndex="$colIndex" -v currentValue="$currentValue" -v newValue="$newValue" 'BEGIN {FS=OFS="|"} {if (NR == 1) {print; next} else if ($colIndex == currentValue) $colIndex = newValue; print}' "$dataFile" > "$dataFile.tmp"
+    if [ "$updateCondition" == "yes" ]; then
+	read -p "Do you want a 'WHERE' condition? (yes/no): " whereCondition
+	
+	if [ "$whereCondition" == "yes" ]; then
+	    # Prompt user for column of where condition
+    	    read -p "Enter the Column of where condition: " columnWhere
+	    # Prompt user for value of where condition
+    	    read -p "Enter the Value of where condition: " valueWhere
+   	    # Get the index of the specified column
+    	    colWhereIndex=$(echo "${columnArray[@]}" | awk -v columnWhere="$columnWhere" '{for(i=1;i<=NF;i++) if($i==columnWhere) print i}')
+	        # Perform the update using awk
+   		awk -v colWhereIndex="$colWhereIndex" -v valueWhere="$valueWhere" -v newValue="$newValue" 'BEGIN {FS=OFS="|"} {if (NR == 1) {print; next} else if ($colWhereIndex == valueWhere) $colIndex = newValue; print}' "$dataFile" > "$dataFile.tmp"
+   		
+	elif [ "$whereCondition" == "no" ]; then
+        	# placeholder
+		echo "other conditions implementation still under-work..."
+	fi
+	
+	# Perform the update using awk with no condition
+       	awk -v colIndex="$colIndex" -v newValue="$newValue" -v condition="$condition" 'BEGIN {FS=OFS="|"} {if (NR == 1) {print; next} else $colIndex = newValue; print}' "$dataFile" >"$dataFile.tmp"
+
+    elif [ "$updateCondition" == "no" ]; then
+        # Update all rows
+	echo "Updating all rows"
+        awk -v colIndex="$colIndex" -v newValue="$newValue" 'BEGIN {FS=OFS="|"} {if (NR == 1) {print; next} else $colIndex = newValue; print}' "$dataFile" >"$dataFile.tmp"
+    fi
+
 
     # Safely move the temporary file to the original file's location
     if mv "$dataFile.tmp" "$dataFile"; then
@@ -637,10 +657,10 @@ function updateTable() {
 # Function to runMainMenu a table
 function runMainMenu() {
     while true; do
-    PS3="Choose an option: "
-    options=("Create Database" "List Databases" "Connect To Database" "Drop Database" "Quit")
-    select opt in "${options[@]}"; do
-        case $opt in
+        PS3="Choose an option: "
+        options=("Create Database" "List Databases" "Connect To Database" "Drop Database" "Quit")
+        select opt in "${options[@]}"; do
+            case $opt in
             "Create Database")
                 createDatabase
                 break
@@ -663,61 +683,60 @@ function runMainMenu() {
             *)
                 echo "Invalid option. Please try again."
                 ;;
-        esac
-    done
+            esac
+        done
     done
 }
 
 # ================================<< End of (( Main Menu )) >>================================
 
-
 # ================================<< Start of (( SubMenu )) >>================================
 
 # Function to runSubMenu a table
 function runSubMenu() {
-        while [ -n "$currentDb" ]; do
+    while [ -n "$currentDb" ]; do
         PS3="Choose an option: "
         options=("Create Table" "List Tables" "Drop Table" "Insert Into Table" "Select From Table" "Delete From Table" "Update Table" "Back TO Main Menu" "Quit")
         select opt in "${options[@]}"; do
             case $opt in
-                "Create Table")
-                    createTable
-                    break
-                    ;;
-                "List Tables")
-                    listTable
-                    break
-                    ;;
-                "Drop Table")
-                    dropTable
-                    break
-                    ;;
-                "Insert Into Table")
-                    insertIntoTable
-                    break
-                    ;;
-                "Select From Table")
-                    selectFromTable
-                    break
-                    ;;
-                "Delete From Table")
-                    deleteFromTable
-                    break
-                    ;;
-                "Update Table")
-                    updateTable
-                    break
-                    ;;
-                "Back TO Main Menu")
-                    currentDb=""
-                    return
-                    ;;
-                "Quit")
-                    exit
-                    ;;
-                *)
-                    echo "Invalid option. Please try again."
-                    ;;
+            "Create Table")
+                createTable
+                break
+                ;;
+            "List Tables")
+                listTable
+                break
+                ;;
+            "Drop Table")
+                dropTable
+                break
+                ;;
+            "Insert Into Table")
+                insertIntoTable
+                break
+                ;;
+            "Select From Table")
+                selectFromTable
+                break
+                ;;
+            "Delete From Table")
+                deleteFromTable
+                break
+                ;;
+            "Update Table")
+                updateTable
+                break
+                ;;
+            "Back TO Main Menu")
+                currentDb=""
+                return
+                ;;
+            "Quit")
+                exit
+                ;;
+            *)
+                echo "Invalid option. Please try again."
+                ;;
             esac
         done
     done
